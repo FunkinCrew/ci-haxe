@@ -13,6 +13,7 @@ const env = new Env();
 
 export async function setup(version: string, nightly: boolean, cacheDependencyPath: string) {
   let nekoPath;
+  let nekoHomebrew = false;
   const {
     stdout: existingNekoBinary,
     exitCode: exitNeko
@@ -22,7 +23,8 @@ export async function setup(version: string, nightly: boolean, cacheDependencyPa
     const { stdout: version } = await getExecOutput('neko', ['-version']);
     console.log(`[neko] found = v${version.trim()}`);
     const existingPath = path.dirname(existingNekoBinary.trim());
-    if (existingPath.startsWith('/opt/homebrew')) {
+    nekoHomebrew = existingPath.startsWith('/opt/homebrew');
+    if (nekoHomebrew) {
       /*
         From the brew install neko output:
         > You must add the following line to your .bashrc or equivalent:
@@ -58,7 +60,7 @@ export async function setup(version: string, nightly: boolean, cacheDependencyPa
     console.log('[neko] fixing dylib paths');
     await exec('ln', [
       '-sfv',
-      path.join(nekoPath, 'libneko.2.dylib'),
+      path.join(nekoHomebrew ? `/opt/homebrew/lib/` : nekoPath, 'libneko.2.dylib'),
       path.join(haxePath, 'libneko.2.dylib'),
     ]);
   }
