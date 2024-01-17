@@ -12,36 +12,9 @@ import { restoreHaxelib, createHaxelibKey } from './haxelib';
 const env = new Env();
 
 export async function setup(version: string, nightly: boolean, cacheDependencyPath: string) {
-  let nekoPath;
-  let nekoHomebrew = false;
-  const {
-    stdout: existingNekoBinary,
-    exitCode: exitNeko
-  // exits with 1 if not found; don't fail the action
-  } = await getExecOutput('which', ['neko'], { ignoreReturnCode: true }); 
-  if (exitNeko === 0) {
-    const { stdout: version } = await getExecOutput('neko', ['-version']);
-    console.log(`[neko] found = v${version.trim()}`);
-    const existingPath = path.dirname(existingNekoBinary.trim());
-    nekoHomebrew = existingPath.startsWith('/opt/homebrew');
-    if (nekoHomebrew) {
-      /*
-        From the brew install neko output:
-        > You must add the following line to your .bashrc or equivalent:
-        >   export NEKOPATH="/opt/homebrew/lib/neko"
-       */
-      nekoPath = `/opt/homebrew/lib/neko`
-    }
-    else {
-      console.warn(`[neko] unsure of library path for ${existingPath}, assuming default`);
-      nekoPath = `/usr/local/lib/neko`;
-    }
-  } else {
-    const neko = NekoAsset.resolveFromHaxeVersion(version); // Haxelib requires Neko
-    console.log(`[neko] missing = v${neko.version}`);
-    console.log(`[neko] dl start = ${neko.downloadUrl}`);
-    nekoPath = await neko.setup();
-  }
+  const neko = NekoAsset.resolveFromHaxeVersion(version); // Haxelib requires Neko
+  console.log(`[neko] dl start = ${neko.version} (${neko.downloadUrl})`);
+  const nekoPath = await neko.setup();
 
   core.addPath(nekoPath);
   console.log(`[neko] NEKOPATH = ${nekoPath}`);
@@ -60,7 +33,7 @@ export async function setup(version: string, nightly: boolean, cacheDependencyPa
     console.log('[neko] fixing dylib paths');
     await exec('ln', [
       '-sfv',
-      path.join(nekoHomebrew ? `/opt/homebrew/lib/` : nekoPath, 'libneko.2.dylib'),
+      path.join(nekoPath, 'libneko.2.dylib'),
       path.join(haxePath, 'libneko.2.dylib'),
     ]);
   }

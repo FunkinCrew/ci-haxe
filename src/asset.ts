@@ -109,7 +109,7 @@ export class NekoAsset extends Asset {
     return new NekoAsset(nekoVer);
   }
 
-  constructor(version: string, env = new Env()) {
+  constructor(version: string, env = new Env('neko')) {
     super('neko', version, env);
   }
 
@@ -143,7 +143,7 @@ export class NekoAsset extends Asset {
 export class HaxeAsset extends Asset {
   nightly = false;
 
-  constructor(version: string, nightly: boolean, env = new Env()) {
+  constructor(version: string, nightly: boolean, env = new Env('haxe')) {
     super('haxe', version, env);
     this.nightly = nightly;
   }
@@ -207,6 +207,8 @@ export class HaxeAsset extends Asset {
 }
 
 export class Env {
+  constructor(readonly name = 'env') {}
+
   get platform() {
     const plat = os.platform();
     switch (plat) {
@@ -232,6 +234,11 @@ export class Env {
     const arch = os.arch();
     switch (arch) {
       case 'x64': {
+        return '64';
+      }
+
+      case 'arm64': {
+        console.warn(`[${this.name}] using rosetta for arm64`)
         return '64';
       }
 

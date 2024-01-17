@@ -158,7 +158,7 @@ class NekoAsset extends Asset {
         const nekoVer = version.startsWith('3.') ? '2.1.0' : '2.3.0'; // Haxe 3 only supports neko 2.1
         return new NekoAsset(nekoVer);
     }
-    constructor(version, env = new Env()) {
+    constructor(version, env = new Env('neko')) {
         super('neko', version, env);
     }
     get downloadUrl() {
@@ -183,7 +183,7 @@ class NekoAsset extends Asset {
 // * NOTE https://github.com/HaxeFoundation/haxe/releases/download/3.4.7/haxe-3.4.7-win64.zip
 class HaxeAsset extends Asset {
     nightly = false;
-    constructor(version, nightly, env = new Env()) {
+    constructor(version, nightly, env = new Env('haxe')) {
         super('haxe', version, env);
         this.nightly = nightly;
     }
@@ -232,6 +232,10 @@ class HaxeAsset extends Asset {
     }
 }
 class Env {
+    name;
+    constructor(name = 'env') {
+        this.name = name;
+    }
     get platform() {
         const plat = external_node_os_namespaceObject.platform();
         switch (plat) {
@@ -253,6 +257,10 @@ class Env {
         const arch = external_node_os_namespaceObject.arch();
         switch (arch) {
             case 'x64': {
+                return '64';
+            }
+            case 'arm64': {
+                console.warn(`[${this.name}] using rosetta for arm64`);
                 return '64';
             }
             default: {
@@ -326,35 +334,9 @@ async function saveHaxelib() {
 
 const env = new Env();
 async function setup(version, nightly, cacheDependencyPath) {
-    let nekoPath;
-    let nekoHomebrew = false;
-    const { stdout: existingNekoBinary, exitCode: exitNeko
-    // exits with 1 if not found; don't fail the action
-     } = await (0,exec.getExecOutput)('which', ['neko'], { ignoreReturnCode: true });
-    if (exitNeko === 0) {
-        const { stdout: version } = await (0,exec.getExecOutput)('neko', ['-version']);
-        console.log(`[neko] found = v${version.trim()}`);
-        const existingPath = external_node_path_namespaceObject.dirname(existingNekoBinary.trim());
-        nekoHomebrew = existingPath.startsWith('/opt/homebrew');
-        if (nekoHomebrew) {
-            /*
-              From the brew install neko output:
-              > You must add the following line to your .bashrc or equivalent:
-              >   export NEKOPATH="/opt/homebrew/lib/neko"
-             */
-            nekoPath = `/opt/homebrew/lib/neko`;
-        }
-        else {
-            console.warn(`[neko] unsure of library path for ${existingPath}, assuming default`);
-            nekoPath = `/usr/local/lib/neko`;
-        }
-    }
-    else {
-        const neko = NekoAsset.resolveFromHaxeVersion(version); // Haxelib requires Neko
-        console.log(`[neko] missing = v${neko.version}`);
-        console.log(`[neko] dl start = ${neko.downloadUrl}`);
-        nekoPath = await neko.setup();
-    }
+    const neko = NekoAsset.resolveFromHaxeVersion(version); // Haxelib requires Neko
+    console.log(`[neko] dl start = ${neko.version} (${neko.downloadUrl})`);
+    const nekoPath = await neko.setup();
     lib_core.addPath(nekoPath);
     console.log(`[neko] NEKOPATH = ${nekoPath}`);
     lib_core.exportVariable('NEKOPATH', nekoPath);
@@ -370,7 +352,7 @@ async function setup(version, nightly, cacheDependencyPath) {
         console.log('[neko] fixing dylib paths');
         await (0,exec.exec)('ln', [
             '-sfv',
-            external_node_path_namespaceObject.join(nekoHomebrew ? `/opt/homebrew/lib/` : nekoPath, 'libneko.2.dylib'),
+            external_node_path_namespaceObject.join(nekoPath, 'libneko.2.dylib'),
             external_node_path_namespaceObject.join(haxePath, 'libneko.2.dylib'),
         ]);
     }
