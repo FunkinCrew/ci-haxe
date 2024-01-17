@@ -17,6 +17,7 @@ async function main(): Promise<void> {
       await setup(version, nightly, cacheDependencyPath);
     }
   } catch (error: any) { // eslint-disable-line @typescript-eslint/no-implicit-any-catch
+    console.error(error);
     core.setFailed(error.message);
   }
 }
