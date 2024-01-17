@@ -159,6 +159,7 @@ export class HaxeAsset extends Asset {
   }
 
   get target() {
+    // Uses universal binary for osx
     if (this.env.platform === 'osx') {
       return this.env.platform;
     }
