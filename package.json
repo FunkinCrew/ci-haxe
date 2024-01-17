@@ -17,7 +17,8 @@
     "test": "xo",
     "format": "xo --fix",
     "dist": "npm run build && npm run pack",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "unprepare": "git config --unset core.hooksPath"
   },
   "keywords": [
     "actions",

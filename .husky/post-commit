@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+if [ -e /tmp/.pre-commit-setup-haxe ]
+    then
+    rm /tmp/.pre-commit-setup-haxe
+    git add dist
+    git commit --amend -C HEAD --no-verify
+fi
