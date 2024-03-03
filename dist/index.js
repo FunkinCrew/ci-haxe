@@ -86,6 +86,7 @@ class Asset {
     async setup() {
         const toolPath = tool_cache.find(this.name, this.version);
         if (toolPath) {
+            console.log(`[${this.name}] found = ${toolPath}`);
             return toolPath;
         }
         return tool_cache.cacheDir(await this.download(), this.name, this.version);
@@ -341,11 +342,12 @@ async function setup(version, nightly, cacheDependencyPath) {
     console.log(`[neko] NEKOPATH = ${nekoPath}`);
     lib_core.exportVariable('NEKOPATH', nekoPath);
     lib_core.exportVariable('LD_LIBRARY_PATH', `${nekoPath}:$LD_LIBRARY_PATH`);
-    console.log(`[haxe] dl start = ${version}`);
     const haxe = new HaxeAsset(version, nightly);
+    console.log(`[haxe] dl start = ${version} (${haxe.downloadUrl})`);
     const haxePath = await haxe.setup();
     lib_core.addPath(haxePath);
     console.log(`[haxe] HAXE_STD_PATH = ${haxePath}/std`);
+    lib_core.exportVariable('HAXEPATH', haxePath);
     lib_core.exportVariable('HAXE_STD_PATH', external_node_path_namespaceObject.join(haxePath, 'std'));
     if (env.platform === 'osx') {
         // Ref: https://github.com/asdf-community/asdf-haxe/pull/7

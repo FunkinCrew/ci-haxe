@@ -18,6 +18,7 @@ abstract class Asset {
   async setup() {
     const toolPath = tc.find(this.name, this.version);
     if (toolPath) {
+      console.log(`[${this.name}] found = ${toolPath}`);
       return toolPath;
     }
 

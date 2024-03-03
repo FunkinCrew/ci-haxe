@@ -21,11 +21,12 @@ export async function setup(version: string, nightly: boolean, cacheDependencyPa
   core.exportVariable('NEKOPATH', nekoPath);
   core.exportVariable('LD_LIBRARY_PATH', `${nekoPath}:$LD_LIBRARY_PATH`);
 
-  console.log(`[haxe] dl start = ${version}`);
   const haxe = new HaxeAsset(version, nightly);
+  console.log(`[haxe] dl start = ${version} (${haxe.downloadUrl})`);
   const haxePath = await haxe.setup();
   core.addPath(haxePath);
   console.log(`[haxe] HAXE_STD_PATH = ${haxePath}/std`);
+  core.exportVariable('HAXEPATH', haxePath);
   core.exportVariable('HAXE_STD_PATH', path.join(haxePath, 'std'));
 
   if (env.platform === 'osx') {
