@@ -353,8 +353,8 @@ async function setup(version, nightly, cacheDependencyPath) {
         console.log('[neko] fixing dylib paths');
         await (0,exec.exec)('ln', [
             '-sfv',
-            external_node_path_namespaceObject.join(nekoPath, 'libneko.2.dylib'),
-            external_node_path_namespaceObject.join(haxePath, 'libneko.2.dylib'),
+            external_node_path_namespaceObject.join(nekoPath, '*.dylib'),
+            external_node_path_namespaceObject.join(haxePath, '*.dylib'),
         ]);
     }
     console.log(`[haxelib] setup start = ${haxePath}/lib`);

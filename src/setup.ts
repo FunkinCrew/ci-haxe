@@ -36,8 +36,8 @@ export async function setup(version: string, nightly: boolean, cacheDependencyPa
     console.log('[neko] fixing dylib paths');
     await exec('ln', [
       '-sfv',
-      path.join(nekoPath, 'libneko.2.dylib'),
-      path.join(haxePath, 'libneko.2.dylib'),
+      path.join(nekoPath, '*.dylib'),
+      path.join(haxePath, '*.dylib'),
     ]);
   }
 
