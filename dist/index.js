@@ -259,13 +259,15 @@ class Env {
     }
     get arch() {
         const arch = external_node_os_namespaceObject.arch();
-        if (arch === "x64") {
-            return "64";
+        switch (arch) {
+            case "x64":
+                return "64";
+            case "arm64":
+                if (this.platform === "osx")
+                    return "64";
+            default:
+                throw new Error(`${arch} not supported`);
         }
-        if (arch === "arm64" && this.platform === "osx") {
-            return "64";
-        }
-        throw new Error(`${arch} not supported`);
     }
 }
 
@@ -348,6 +350,7 @@ async function setup(version, nightly, cacheDependencyPath) {
     lib_core.exportVariable('HAXEPATH', haxePath);
     lib_core.exportVariable('HAXE_STD_PATH', external_node_path_namespaceObject.join(haxePath, 'std'));
     if (env.platform === 'osx') {
+        lib_core.exportVariable('DYLD_LIBRARY_PATH', `${nekoPath}:$DYLD_LIBRARY_PATH`);
         lib_core.exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
         // Ref: https://github.com/asdf-community/asdf-haxe/pull/7
         console.log('[neko] fixing dylib paths');

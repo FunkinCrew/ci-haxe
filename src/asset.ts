@@ -249,14 +249,13 @@ export class Env {
   get arch() {
     const arch = os.arch();
 
-    if (arch === "x64") {
-      return "64";
+    switch (arch) {
+      case "x64":
+        return "64";
+      case "arm64":
+        if (this.platform === "osx") return "64";
+      default:
+        throw new Error(`${arch} not supported`);
     }
-
-    if (arch === "arm64" && this.platform === "osx") {
-      return "64";
-    }
-
-    throw new Error(`${arch} not supported`);
   }
 }
