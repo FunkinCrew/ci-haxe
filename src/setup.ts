@@ -30,6 +30,7 @@ export async function setup(version: string, nightly: boolean, cacheDependencyPa
   core.exportVariable('HAXE_STD_PATH', path.join(haxePath, 'std'));
 
   if (env.platform === 'osx') {
+    core.exportVariable('DYLD_LIBRARY_PATH', `${nekoPath}:$DYLD_LIBRARY_PATH`);
     core.exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
 
     // Ref: https://github.com/asdf-community/asdf-haxe/pull/7
