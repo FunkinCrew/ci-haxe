@@ -364,21 +364,22 @@ async function setup(version, nightly, cacheDependencyPath) {
         /* Upstream; this doesn't work because of macOS SIP */
         // core.exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
         console.log('[neko] fixing dylib paths');
-        /* Ref: https://github.com/asdf-community/asdf-haxe/pull/7 */
-        // await exec('ln', [
-        //   '-sfv',
-        //   path.join(nekoPath, 'libneko.2.dylib'),
-        //   path.join(haxePath, 'libneko.2.dylib'),
-        // ]);
-        /* Ref:
-         * https://blog.krzyzanowskim.com/2018/12/05/rpath-what/
-         * https://github.com/HaxeFoundation/haxe/issues/10297
-         */
-        await (0,exec.exec)('install_name_tool', [
-            '-add_rpath',
-            nekoPath,
-            external_node_path_namespaceObject.join(haxePath, 'haxelib')
-        ]);
+        const haxelibBin = external_node_path_namespaceObject.join(haxePath, 'haxelib');
+        const otoolOut = await (0,exec.getExecOutput)('otool', ['-l', haxelibBin]);
+        if (otoolOut.stdout.includes(nekoPath))
+            console.log('[neko] rpath already patched');
+        else {
+            console.log('[neko] patching rpath for', haxelibBin);
+            /* Ref:
+             * https://blog.krzyzanowskim.com/2018/12/05/rpath-what/
+             * https://github.com/HaxeFoundation/haxe/issues/10297
+             */
+            await (0,exec.exec)('install_name_tool', [
+                '-add_rpath',
+                nekoPath,
+                haxelibBin
+            ]);
+        }
     }
     console.log(`[haxelib] setup start = ${haxePath}/lib`);
     const haxelibPath = external_node_path_namespaceObject.join(haxePath, 'lib');
