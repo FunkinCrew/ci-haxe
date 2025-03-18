@@ -350,9 +350,10 @@ async function setup(version, nightly, cacheDependencyPath) {
     lib_core.exportVariable('HAXEPATH', haxePath);
     lib_core.exportVariable('HAXE_STD_PATH', external_node_path_namespaceObject.join(haxePath, 'std'));
     if (env.platform === 'osx') {
-        lib_core.exportVariable('DYLD_LIBRARY_PATH', `${nekoPath}:$DYLD_LIBRARY_PATH`);
-        lib_core.exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
-        // Ref: https://github.com/asdf-community/asdf-haxe/pull/7
+        /* upstream changes */
+        //core.exportVariable('DYLD_LIBRARY_PATH', `${nekoPath}:$DYLD_LIBRARY_PATH`);
+        //core.exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
+        /* Ref: https://github.com/asdf-community/asdf-haxe/pull/7 */
         console.log('[neko] fixing dylib paths');
         await (0,exec.exec)('ln', [
             '-sfv',
