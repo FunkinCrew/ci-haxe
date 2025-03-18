@@ -3,17 +3,21 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as os from 'node:os';
-import * as tc from '@actions/tool-cache';
-import * as core from '@actions/core';
-import { exec } from '@actions/exec';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
+import * as tc from "@actions/tool-cache";
+import * as core from "@actions/core";
+import { exec } from "@actions/exec";
 
-export type AssetFileExt = '.zip' | '.tar.gz';
+export type AssetFileExt = ".zip" | ".tar.gz";
 
 abstract class Asset {
-  constructor(readonly name: string, readonly version: string, protected readonly env: Env) {}
+  constructor(
+    readonly name: string,
+    readonly version: string,
+    protected readonly env: Env,
+  ) {}
 
   async setup() {
     const toolPath = tc.find(this.name, this.version);
@@ -35,21 +39,28 @@ abstract class Asset {
 
   protected get fileExt(): AssetFileExt {
     switch (this.env.platform) {
-      case 'win': {
-        return '.zip';
+      case "win": {
+        return ".zip";
       }
 
       default: {
-        return '.tar.gz';
+        return ".tar.gz";
       }
     }
   }
 
   private async download() {
     const downloadPath = await tc.downloadTool(this.downloadUrl);
-    const extractPath = await this.extract(downloadPath, this.fileNameWithoutExt, this.fileExt);
+    const extractPath = await this.extract(
+      downloadPath,
+      this.fileNameWithoutExt,
+      this.fileExt,
+    );
 
-    const toolRoot = await this.findToolRoot(extractPath, this.isDirectoryNested);
+    const toolRoot = await this.findToolRoot(
+      extractPath,
+      this.isDirectoryNested,
+    );
     if (!toolRoot) {
       throw new Error(`tool directory not found: ${extractPath}`);
     }
@@ -64,11 +75,11 @@ abstract class Asset {
     }
 
     switch (ext) {
-      case '.tar.gz': {
+      case ".tar.gz": {
         return tc.extractTar(file, dest);
       }
 
-      case '.zip': {
+      case ".zip": {
         return tc.extractZip(file, dest);
       }
 
@@ -85,8 +96,8 @@ abstract class Asset {
     }
 
     let found = false;
-    let toolRoot = '';
-    await exec('ls', ['-1', extractPath], {
+    let toolRoot = "";
+    await exec("ls", ["-1", extractPath], {
       listeners: {
         stdout(data) {
           const entry = data.toString().trim();
@@ -101,21 +112,21 @@ abstract class Asset {
   }
 }
 
-// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-3-0/neko-2.3.0-linux64.tar.gz
-// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-3-0/neko-2.3.0-osx64.tar.gz
-// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-3-0/neko-2.3.0-win64.zip
+// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-4-0/neko-2.4.0-linux64.tar.gz
+// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-4-0/neko-2.4.0-osx-universal.tar.gz
+// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-4-0/neko-2.4.0-win64.zip
 export class NekoAsset extends Asset {
   static resolveFromHaxeVersion(version: string) {
-    const nekoVer = version.startsWith('3.') ? '2.1.0' : '2.3.0'; // Haxe 3 only supports neko 2.1
+    const nekoVer = version.startsWith("3.") ? "2.1.0" : "2.4.0"; // Haxe 3 only supports neko 2.1
     return new NekoAsset(nekoVer);
   }
 
-  constructor(version: string, env = new Env('neko')) {
-    super('neko', version, env);
+  constructor(version: string, env = new Env("neko")) {
+    super("neko", version, env);
   }
 
   get downloadUrl() {
-    const tag = `v${this.version.replace(/\./g, '-')}`;
+    const tag = `v${this.version.replace(/\./g, "-")}`;
     return super.makeDownloadUrl(
       `/neko/releases/download/${tag}/${this.fileNameWithoutExt}${this.fileExt}`,
     );
@@ -123,8 +134,12 @@ export class NekoAsset extends Asset {
 
   get target() {
     // No 64bit version of neko 2.1 available for windows
-    if (this.env.platform === 'win' && this.version.startsWith('2.1')) {
+    if (this.env.platform === "win" && this.version.startsWith("2.1")) {
       return this.env.platform;
+    }
+
+    if (this.env.platform === "osx" && this.version.startsWith("2.4")) {
+      return "osx-universal";
     }
 
     return `${this.env.platform}${this.env.arch}`;
@@ -144,8 +159,8 @@ export class NekoAsset extends Asset {
 export class HaxeAsset extends Asset {
   nightly = false;
 
-  constructor(version: string, nightly: boolean, env = new Env('haxe')) {
-    super('haxe', version, env);
+  constructor(version: string, nightly: boolean, env = new Env("haxe")) {
+    super("haxe", version, env);
     this.nightly = nightly;
   }
 
@@ -161,12 +176,12 @@ export class HaxeAsset extends Asset {
 
   get target() {
     // Uses universal binary for osx
-    if (this.env.platform === 'osx') {
+    if (this.env.platform === "osx") {
       return this.env.platform;
     }
 
     // No 64bit version of neko 2.1 available for windows, thus we can also only use 32bit version of Haxe 3
-    if (this.env.platform === 'win' && this.version.startsWith('3.')) {
+    if (this.env.platform === "win" && this.version.startsWith("3.")) {
       return this.env.platform;
     }
 
@@ -176,16 +191,16 @@ export class HaxeAsset extends Asset {
   get nightlyTarget() {
     const plat = this.env.platform;
     switch (plat) {
-      case 'osx': {
-        return 'mac';
+      case "osx": {
+        return "mac";
       }
 
-      case 'linux': {
-        return 'linux64';
+      case "linux": {
+        return "linux64";
       }
 
-      case 'win': {
-        return 'windows64';
+      case "win": {
+        return "windows64";
       }
 
       default: {
@@ -208,21 +223,21 @@ export class HaxeAsset extends Asset {
 }
 
 export class Env {
-  constructor(readonly name = 'env') {}
+  constructor(readonly name = "env") {}
 
   get platform() {
     const plat = os.platform();
     switch (plat) {
-      case 'linux': {
-        return 'linux';
+      case "linux": {
+        return "linux";
       }
 
-      case 'win32': {
-        return 'win';
+      case "win32": {
+        return "win";
       }
 
-      case 'darwin': {
-        return 'osx';
+      case "darwin": {
+        return "osx";
       }
 
       default: {
@@ -233,19 +248,15 @@ export class Env {
 
   get arch() {
     const arch = os.arch();
-    switch (arch) {
-      case 'x64': {
-        return '64';
-      }
 
-      case 'arm64': {
-        console.warn(`[${this.name}] using rosetta for arm64`)
-        return '64';
-      }
-
-      default: {
-        throw new Error(`${arch} not supported`);
-      }
+    if (arch === "x64") {
+      return "64";
     }
+
+    if (arch === "arm64" && this.platform === "osx") {
+      return "64";
+    }
+
+    throw new Error(`${arch} not supported`);
   }
 }

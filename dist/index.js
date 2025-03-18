@@ -96,11 +96,11 @@ class Asset {
     }
     get fileExt() {
         switch (this.env.platform) {
-            case 'win': {
-                return '.zip';
+            case "win": {
+                return ".zip";
             }
             default: {
-                return '.tar.gz';
+                return ".tar.gz";
             }
         }
     }
@@ -119,10 +119,10 @@ class Asset {
             external_node_fs_namespaceObject.rmdirSync(dest, { recursive: true });
         }
         switch (ext) {
-            case '.tar.gz': {
+            case ".tar.gz": {
                 return tool_cache.extractTar(file, dest);
             }
-            case '.zip': {
+            case ".zip": {
                 return tool_cache.extractZip(file, dest);
             }
             default: {
@@ -136,8 +136,8 @@ class Asset {
             return extractPath;
         }
         let found = false;
-        let toolRoot = '';
-        await (0,exec.exec)('ls', ['-1', extractPath], {
+        let toolRoot = "";
+        await (0,exec.exec)("ls", ["-1", extractPath], {
             listeners: {
                 stdout(data) {
                     const entry = data.toString().trim();
@@ -151,25 +151,28 @@ class Asset {
         return found ? toolRoot : null;
     }
 }
-// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-3-0/neko-2.3.0-linux64.tar.gz
-// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-3-0/neko-2.3.0-osx64.tar.gz
-// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-3-0/neko-2.3.0-win64.zip
+// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-4-0/neko-2.4.0-linux64.tar.gz
+// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-4-0/neko-2.4.0-osx-universal.tar.gz
+// * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-4-0/neko-2.4.0-win64.zip
 class NekoAsset extends Asset {
     static resolveFromHaxeVersion(version) {
-        const nekoVer = version.startsWith('3.') ? '2.1.0' : '2.3.0'; // Haxe 3 only supports neko 2.1
+        const nekoVer = version.startsWith("3.") ? "2.1.0" : "2.4.0"; // Haxe 3 only supports neko 2.1
         return new NekoAsset(nekoVer);
     }
-    constructor(version, env = new Env('neko')) {
-        super('neko', version, env);
+    constructor(version, env = new Env("neko")) {
+        super("neko", version, env);
     }
     get downloadUrl() {
-        const tag = `v${this.version.replace(/\./g, '-')}`;
+        const tag = `v${this.version.replace(/\./g, "-")}`;
         return super.makeDownloadUrl(`/neko/releases/download/${tag}/${this.fileNameWithoutExt}${this.fileExt}`);
     }
     get target() {
         // No 64bit version of neko 2.1 available for windows
-        if (this.env.platform === 'win' && this.version.startsWith('2.1')) {
+        if (this.env.platform === "win" && this.version.startsWith("2.1")) {
             return this.env.platform;
+        }
+        if (this.env.platform === "osx" && this.version.startsWith("2.4")) {
+            return "osx-universal";
         }
         return `${this.env.platform}${this.env.arch}`;
     }
@@ -184,8 +187,8 @@ class NekoAsset extends Asset {
 // * NOTE https://github.com/HaxeFoundation/haxe/releases/download/3.4.7/haxe-3.4.7-win64.zip
 class HaxeAsset extends Asset {
     nightly = false;
-    constructor(version, nightly, env = new Env('haxe')) {
-        super('haxe', version, env);
+    constructor(version, nightly, env = new Env("haxe")) {
+        super("haxe", version, env);
         this.nightly = nightly;
     }
     get downloadUrl() {
@@ -196,11 +199,11 @@ class HaxeAsset extends Asset {
     }
     get target() {
         // Uses universal binary for osx
-        if (this.env.platform === 'osx') {
+        if (this.env.platform === "osx") {
             return this.env.platform;
         }
         // No 64bit version of neko 2.1 available for windows, thus we can also only use 32bit version of Haxe 3
-        if (this.env.platform === 'win' && this.version.startsWith('3.')) {
+        if (this.env.platform === "win" && this.version.startsWith("3.")) {
             return this.env.platform;
         }
         return `${this.env.platform}${this.env.arch}`;
@@ -208,14 +211,14 @@ class HaxeAsset extends Asset {
     get nightlyTarget() {
         const plat = this.env.platform;
         switch (plat) {
-            case 'osx': {
-                return 'mac';
+            case "osx": {
+                return "mac";
             }
-            case 'linux': {
-                return 'linux64';
+            case "linux": {
+                return "linux64";
             }
-            case 'win': {
-                return 'windows64';
+            case "win": {
+                return "windows64";
             }
             default: {
                 throw new Error(`${plat} not supported`); // eslint-disable-line @typescript-eslint/restrict-template-expressions
@@ -234,20 +237,20 @@ class HaxeAsset extends Asset {
 }
 class Env {
     name;
-    constructor(name = 'env') {
+    constructor(name = "env") {
         this.name = name;
     }
     get platform() {
         const plat = external_node_os_namespaceObject.platform();
         switch (plat) {
-            case 'linux': {
-                return 'linux';
+            case "linux": {
+                return "linux";
             }
-            case 'win32': {
-                return 'win';
+            case "win32": {
+                return "win";
             }
-            case 'darwin': {
-                return 'osx';
+            case "darwin": {
+                return "osx";
             }
             default: {
                 throw new Error(`${plat} not supported`);
@@ -256,18 +259,13 @@ class Env {
     }
     get arch() {
         const arch = external_node_os_namespaceObject.arch();
-        switch (arch) {
-            case 'x64': {
-                return '64';
-            }
-            case 'arm64': {
-                console.warn(`[${this.name}] using rosetta for arm64`);
-                return '64';
-            }
-            default: {
-                throw new Error(`${arch} not supported`);
-            }
+        if (arch === "x64") {
+            return "64";
         }
+        if (arch === "arm64" && this.platform === "osx") {
+            return "64";
+        }
+        throw new Error(`${arch} not supported`);
     }
 }
 
@@ -350,6 +348,7 @@ async function setup(version, nightly, cacheDependencyPath) {
     lib_core.exportVariable('HAXEPATH', haxePath);
     lib_core.exportVariable('HAXE_STD_PATH', external_node_path_namespaceObject.join(haxePath, 'std'));
     if (env.platform === 'osx') {
+        lib_core.exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
         // Ref: https://github.com/asdf-community/asdf-haxe/pull/7
         console.log('[neko] fixing dylib paths');
         await (0,exec.exec)('ln', [
