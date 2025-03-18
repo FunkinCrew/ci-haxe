@@ -10,6 +10,11 @@ import * as tc from "@actions/tool-cache";
 import * as core from "@actions/core";
 import { exec } from "@actions/exec";
 
+const NEKO_2_4_0_WIN64_SEGFAULT_PATCH = {
+  URL: "https://geo.thei.rs/funkin/neko-win64-2.4.1+pull-304-7d10f270a5f55115de9d57223a71ed688dab5148.zip",
+  FILE: "neko-win64-2.4.1+pull-304-7d10f270a5f55115de9d57223a71ed688dab5148"
+}
+
 export type AssetFileExt = ".zip" | ".tar.gz";
 
 abstract class Asset {
@@ -126,6 +131,7 @@ export class NekoAsset extends Asset {
   }
 
   get downloadUrl() {
+    if (this._needsPatched) return NEKO_2_4_0_WIN64_SEGFAULT_PATCH.URL; 
     const tag = `v${this.version.replace(/\./g, "-")}`;
     return super.makeDownloadUrl(
       `/neko/releases/download/${tag}/${this.fileNameWithoutExt}${this.fileExt}`,
@@ -146,11 +152,16 @@ export class NekoAsset extends Asset {
   }
 
   get fileNameWithoutExt() {
+    if (this._needsPatched) return NEKO_2_4_0_WIN64_SEGFAULT_PATCH.FILE; 
     return `neko-${this.version}-${this.target}`;
   }
 
   get isDirectoryNested() {
     return true;
+  }
+
+  get _needsPatched() {
+    return this.version === "2.4.0" && this.target === "win64";
   }
 }
 
