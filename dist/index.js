@@ -74,7 +74,6 @@ var tool_cache = __nccwpck_require__(7784);
 
 
 
-const NEKO_2_4_0_WIN64_SEGFAULT_PATCH = "https://geo.thei.rs/funkin/neko-win64-2.4.1+pull-304-7d10f270a5f55115de9d57223a71ed688dab5148.zip";
 class Asset {
     name;
     version;
@@ -157,15 +156,13 @@ class Asset {
 // * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-4-0/neko-2.4.0-win64.zip
 class NekoAsset extends Asset {
     static resolveFromHaxeVersion(version) {
-        const nekoVer = version.startsWith("3.") ? "2.1.0" : "2.4.0"; // Haxe 3 only supports neko 2.1
+        const nekoVer = version.startsWith("3.") ? "2.1.0" : "2.4.1"; // Haxe 3 only supports neko 2.1
         return new NekoAsset(nekoVer);
     }
     constructor(version, env = new Env("neko")) {
         super("neko", version, env);
     }
     get downloadUrl() {
-        if (this._needsPatched)
-            return NEKO_2_4_0_WIN64_SEGFAULT_PATCH;
         const tag = `v${this.version.replace(/\./g, "-")}`;
         return super.makeDownloadUrl(`/neko/releases/download/${tag}/${this.fileNameWithoutExt}${this.fileExt}`);
     }
@@ -184,9 +181,6 @@ class NekoAsset extends Asset {
     }
     get isDirectoryNested() {
         return true;
-    }
-    get _needsPatched() {
-        return this.version === "2.4.0" && this.target === "win64";
     }
 }
 // * NOTE https://github.com/HaxeFoundation/haxe/releases/download/4.0.5/haxe-4.0.5-linux64.tar.gz
