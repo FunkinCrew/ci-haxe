@@ -3,11 +3,17 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import * as tc from "@actions/tool-cache";
-import * as core from "@actions/core";
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
+import { arch, platform } from "node:os";
+import {
+  cacheDir,
+  downloadTool,
+  find as findCached,
+  extractTar,
+  extractZip
+} from "@actions/tool-cache";
+import { debug }from "@actions/core";
 import { exec } from "@actions/exec";
 
 export type AssetFileExt = ".zip" | ".tar.gz";
@@ -20,13 +26,13 @@ abstract class Asset {
   ) {}
 
   async setup() {
-    const toolPath = tc.find(this.name, this.version);
+    const toolPath = findCached(this.name, this.version);
     if (toolPath) {
       console.log(`[${this.name}] found = ${toolPath}`);
       return toolPath;
     }
 
-    return tc.cacheDir(await this.download(), this.name, this.version);
+    return cacheDir(await this.download(), this.name, this.version);
   }
 
   protected abstract get downloadUrl(): string;
@@ -49,8 +55,12 @@ abstract class Asset {
     }
   }
 
+  protected get fileName(): string {
+    return `${this.fileNameWithoutExt}${this.fileExt}`;
+  }
+
   private async download() {
-    const downloadPath = await tc.downloadTool(this.downloadUrl);
+    const downloadPath = await downloadTool(this.downloadUrl);
     const extractPath = await this.extract(
       downloadPath,
       this.fileNameWithoutExt,
@@ -65,27 +75,22 @@ abstract class Asset {
       throw new Error(`tool directory not found: ${extractPath}`);
     }
 
-    core.debug(`found toolRoot: ${toolRoot}`);
+    debug(`found toolRoot: ${toolRoot}`);
     return toolRoot;
   }
 
   private async extract(file: string, dest: string, ext: AssetFileExt) {
-    if (fs.existsSync(dest)) {
-      fs.rmdirSync(dest, { recursive: true });
-    }
+    await rm(dest, { recursive: true, force: true });
 
     switch (ext) {
-      case ".tar.gz": {
-        return tc.extractTar(file, dest);
-      }
+      case ".tar.gz":
+        return extractTar(file, dest);
 
-      case ".zip": {
-        return tc.extractZip(file, dest);
-      }
+      case ".zip":
+        return extractZip(file, dest);
 
-      default: {
+      default:
         throw new Error(`unknown ext: ${ext}`); // eslint-disable-line @typescript-eslint/restrict-template-expressions
-      }
     }
   }
 
@@ -95,20 +100,18 @@ abstract class Asset {
       return extractPath;
     }
 
-    let found = false;
-    let toolRoot = "";
-    await exec("ls", ["-1", extractPath], {
-      listeners: {
-        stdout(data) {
-          const entry = data.toString().trim();
-          if (entry.length > 0) {
-            toolRoot = path.join(extractPath, entry);
-            found = true;
-          }
+    return new Promise<string | null>((res) => {
+      exec("ls", ["-1", extractPath], {
+        listeners: {
+          stdout(data) {
+            const entry = data.toString().trim();
+            if (entry.length > 0) {
+              res(join(extractPath, entry));
+            }
+          },
         },
-      },
+      }).then(() => res(null));
     });
-    return found ? toolRoot : null;
   }
 }
 
@@ -128,7 +131,7 @@ export class NekoAsset extends Asset {
   get downloadUrl() {
     const tag = `v${this.version.replace(/\./g, "-")}`;
     return super.makeDownloadUrl(
-      `/neko/releases/download/${tag}/${this.fileNameWithoutExt}${this.fileExt}`,
+      `/neko/releases/download/${tag}/${this.fileName}`,
     );
   }
 
@@ -165,13 +168,9 @@ export class HaxeAsset extends Asset {
   }
 
   get downloadUrl() {
-    if (this.nightly) {
-      return `https://build.haxe.org/builds/haxe/${this.nightlyTarget}/${this.fileNameWithoutExt}${this.fileExt}`;
-    }
-
-    return super.makeDownloadUrl(
-      `/haxe/releases/download/${this.version}/${this.fileNameWithoutExt}${this.fileExt}`,
-    );
+    return this.nightly
+      ? `https://build.haxe.org/builds/haxe/${this.nightlyTarget}/${this.fileName}`
+      : super.makeDownloadUrl(`/haxe/releases/download/${this.version}/${this.fileName}`);
   }
 
   get target() {
@@ -226,7 +225,7 @@ export class Env {
   constructor(readonly name = "env") {}
 
   get platform() {
-    const plat = os.platform();
+    const plat = platform();
     switch (plat) {
       case "linux": {
         return "linux";
@@ -247,15 +246,15 @@ export class Env {
   }
 
   get arch() {
-    const arch = os.arch();
+    const hostArch = arch();
 
-    switch (arch) {
+    switch (hostArch) {
       case "x64":
         return "64";
       case "arm64":
         if (this.platform === "osx") return "64";
       default:
-        throw new Error(`${arch} not supported`);
+        throw new Error(`${hostArch} not supported`);
     }
   }
 }

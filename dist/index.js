@@ -11,7 +11,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var semver__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1383);
 /* harmony import */ var semver__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(semver__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _setup__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3582);
+/* harmony import */ var _setup__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2845);
 // Copyright (c) 2020 Sho Kuroda <krdlab@gmail.com>
 //
 // This software is released under the MIT License.
@@ -21,17 +21,17 @@ __nccwpck_require__.r(__webpack_exports__);
 
 async function main() {
     try {
-        const inputVersion = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('haxe-version');
-        const cacheDependencyPath = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('cache-dependency-path');
+        const inputVersion = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('haxe-version');
+        const cacheDependencyPath = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('cache-dependency-path');
         const nightly = /^(\d{4}-\d{2}-\d{2}_[\w.-]+_\w+)|latest$/.test(inputVersion);
-        const version = nightly ? inputVersion : semver__WEBPACK_IMPORTED_MODULE_1__.valid(semver__WEBPACK_IMPORTED_MODULE_1__.clean(inputVersion));
+        const version = nightly ? inputVersion : (0,semver__WEBPACK_IMPORTED_MODULE_1__.valid)((0,semver__WEBPACK_IMPORTED_MODULE_1__.clean)(inputVersion));
         if (version) {
             await (0,_setup__WEBPACK_IMPORTED_MODULE_2__/* .setup */ .c)(version, nightly, cacheDependencyPath);
         }
     }
     catch (error) { // eslint-disable-line @typescript-eslint/no-implicit-any-catch
         console.error(error);
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(error.message);
     }
 }
 await main();
@@ -41,7 +41,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 3582:
+/***/ 2845:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
@@ -54,11 +54,11 @@ __nccwpck_require__.d(__webpack_exports__, {
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = require("node:path");
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var lib_core = __nccwpck_require__(2186);
+var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
 var exec = __nccwpck_require__(1514);
-;// CONCATENATED MODULE: external "node:fs"
-const external_node_fs_namespaceObject = require("node:fs");
+;// CONCATENATED MODULE: external "node:fs/promises"
+const promises_namespaceObject = require("node:fs/promises");
 ;// CONCATENATED MODULE: external "node:os"
 const external_node_os_namespaceObject = require("node:os");
 // EXTERNAL MODULE: ./node_modules/@actions/tool-cache/lib/tool-cache.js
@@ -84,12 +84,12 @@ class Asset {
         this.env = env;
     }
     async setup() {
-        const toolPath = tool_cache.find(this.name, this.version);
+        const toolPath = (0,tool_cache.find)(this.name, this.version);
         if (toolPath) {
             console.log(`[${this.name}] found = ${toolPath}`);
             return toolPath;
         }
-        return tool_cache.cacheDir(await this.download(), this.name, this.version);
+        return (0,tool_cache.cacheDir)(await this.download(), this.name, this.version);
     }
     makeDownloadUrl(path) {
         return `https://github.com/HaxeFoundation${path}`;
@@ -104,30 +104,28 @@ class Asset {
             }
         }
     }
+    get fileName() {
+        return `${this.fileNameWithoutExt}${this.fileExt}`;
+    }
     async download() {
-        const downloadPath = await tool_cache.downloadTool(this.downloadUrl);
+        const downloadPath = await (0,tool_cache.downloadTool)(this.downloadUrl);
         const extractPath = await this.extract(downloadPath, this.fileNameWithoutExt, this.fileExt);
         const toolRoot = await this.findToolRoot(extractPath, this.isDirectoryNested);
         if (!toolRoot) {
             throw new Error(`tool directory not found: ${extractPath}`);
         }
-        lib_core.debug(`found toolRoot: ${toolRoot}`);
+        (0,core.debug)(`found toolRoot: ${toolRoot}`);
         return toolRoot;
     }
     async extract(file, dest, ext) {
-        if (external_node_fs_namespaceObject.existsSync(dest)) {
-            external_node_fs_namespaceObject.rmdirSync(dest, { recursive: true });
-        }
+        await (0,promises_namespaceObject.rm)(dest, { recursive: true, force: true });
         switch (ext) {
-            case ".tar.gz": {
-                return tool_cache.extractTar(file, dest);
-            }
-            case ".zip": {
-                return tool_cache.extractZip(file, dest);
-            }
-            default: {
+            case ".tar.gz":
+                return (0,tool_cache.extractTar)(file, dest);
+            case ".zip":
+                return (0,tool_cache.extractZip)(file, dest);
+            default:
                 throw new Error(`unknown ext: ${ext}`); // eslint-disable-line @typescript-eslint/restrict-template-expressions
-            }
         }
     }
     // * NOTE: tar xz -C haxe-4.0.5-linux64 -f haxe-4.0.5-linux64.tar.gz --> haxe-4.0.5-linux64/haxe_20191217082701_67feacebc
@@ -135,20 +133,18 @@ class Asset {
         if (!nested) {
             return extractPath;
         }
-        let found = false;
-        let toolRoot = "";
-        await (0,exec.exec)("ls", ["-1", extractPath], {
-            listeners: {
-                stdout(data) {
-                    const entry = data.toString().trim();
-                    if (entry.length > 0) {
-                        toolRoot = external_node_path_namespaceObject.join(extractPath, entry);
-                        found = true;
-                    }
+        return new Promise((res) => {
+            (0,exec.exec)("ls", ["-1", extractPath], {
+                listeners: {
+                    stdout(data) {
+                        const entry = data.toString().trim();
+                        if (entry.length > 0) {
+                            res((0,external_node_path_namespaceObject.join)(extractPath, entry));
+                        }
+                    },
                 },
-            },
+            }).then(() => res(null));
         });
-        return found ? toolRoot : null;
     }
 }
 // * NOTE https://github.com/HaxeFoundation/neko/releases/download/v2-4-0/neko-2.4.0-linux64.tar.gz
@@ -164,7 +160,7 @@ class NekoAsset extends Asset {
     }
     get downloadUrl() {
         const tag = `v${this.version.replace(/\./g, "-")}`;
-        return super.makeDownloadUrl(`/neko/releases/download/${tag}/${this.fileNameWithoutExt}${this.fileExt}`);
+        return super.makeDownloadUrl(`/neko/releases/download/${tag}/${this.fileName}`);
     }
     get target() {
         // No 64bit version of neko 2.1 available for windows
@@ -192,10 +188,9 @@ class HaxeAsset extends Asset {
         this.nightly = nightly;
     }
     get downloadUrl() {
-        if (this.nightly) {
-            return `https://build.haxe.org/builds/haxe/${this.nightlyTarget}/${this.fileNameWithoutExt}${this.fileExt}`;
-        }
-        return super.makeDownloadUrl(`/haxe/releases/download/${this.version}/${this.fileNameWithoutExt}${this.fileExt}`);
+        return this.nightly
+            ? `https://build.haxe.org/builds/haxe/${this.nightlyTarget}/${this.fileName}`
+            : super.makeDownloadUrl(`/haxe/releases/download/${this.version}/${this.fileName}`);
     }
     get target() {
         // Uses universal binary for osx
@@ -241,7 +236,7 @@ class Env {
         this.name = name;
     }
     get platform() {
-        const plat = external_node_os_namespaceObject.platform();
+        const plat = (0,external_node_os_namespaceObject.platform)();
         switch (plat) {
             case "linux": {
                 return "linux";
@@ -258,21 +253,21 @@ class Env {
         }
     }
     get arch() {
-        const arch = external_node_os_namespaceObject.arch();
-        switch (arch) {
+        const hostArch = (0,external_node_os_namespaceObject.arch)();
+        switch (hostArch) {
             case "x64":
                 return "64";
             case "arm64":
                 if (this.platform === "osx")
                     return "64";
             default:
-                throw new Error(`${arch} not supported`);
+                throw new Error(`${hostArch} not supported`);
         }
     }
 }
 
 // EXTERNAL MODULE: ./node_modules/@actions/cache/lib/cache.js
-var lib_cache = __nccwpck_require__(7799);
+var cache = __nccwpck_require__(7799);
 // EXTERNAL MODULE: ./node_modules/@actions/glob/lib/glob.js
 var glob = __nccwpck_require__(8090);
 ;// CONCATENATED MODULE: ./lib/haxelib.js
@@ -287,40 +282,37 @@ var State;
     State["CacheHaxelibPath"] = "HAXELIB_PATH";
 })(State || (State = {}));
 async function createHaxelibKey(platform, version, cacheDependencyPath) {
-    const fileHash = await glob.hashFiles(cacheDependencyPath);
-    if (!fileHash) {
+    const fileHash = await (0,glob.hashFiles)(cacheDependencyPath);
+    if (!fileHash)
         throw new Error('Some specified paths were not resolved, unable to cache dependencies.');
-    }
     return `haxelib-cache-${platform}-haxe${version}-${fileHash}`;
 }
 async function restoreHaxelib(primaryKey, haxelibPath) {
-    lib_core.saveState(State.CachePrimaryKey, primaryKey);
-    lib_core.saveState(State.CacheHaxelibPath, haxelibPath);
-    const restoreResult = await lib_cache.restoreCache([haxelibPath], primaryKey);
-    lib_core.setOutput('cache-hit', Boolean(restoreResult));
-    if (!restoreResult) {
-        lib_core.info('haxelib cache is not found');
-        return;
-    }
-    lib_core.saveState(State.CacheRestoreResult, restoreResult);
-    lib_core.info(`Cache restored from key: ${restoreResult}`);
+    (0,core.saveState)(State.CachePrimaryKey, primaryKey);
+    (0,core.saveState)(State.CacheHaxelibPath, haxelibPath);
+    const restoreResult = await (0,cache.restoreCache)([haxelibPath], primaryKey);
+    (0,core.setOutput)('cache-hit', Boolean(restoreResult));
+    if (!restoreResult)
+        return (0,core.info)('haxelib cache is not found');
+    (0,core.saveState)(State.CacheRestoreResult, restoreResult);
+    (0,core.info)(`Cache restored from key: ${restoreResult}`);
 }
 async function saveHaxelib() {
-    const restoreResult = core.getState(State.CacheRestoreResult);
-    const primaryKey = core.getState(State.CachePrimaryKey);
-    const haxelibPath = core.getState(State.CacheHaxelibPath);
-    if (!fs.existsSync(haxelibPath)) {
+    const restoreResult = getState(State.CacheRestoreResult);
+    const primaryKey = getState(State.CachePrimaryKey);
+    const haxelibPath = getState(State.CacheHaxelibPath);
+    try {
+        await access(haxelibPath, constants.F_OK);
+    }
+    catch {
         throw new Error(`Cache folder path is retrieved but doesn't exist on disk: ${haxelibPath}`);
     }
-    if (primaryKey === restoreResult) {
-        core.info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
+    if (primaryKey === restoreResult)
+        return info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
+    const cacheId = await saveCache([haxelibPath], primaryKey);
+    if (cacheId === -1)
         return;
-    }
-    const cacheId = await cache.saveCache([haxelibPath], primaryKey);
-    if (cacheId === -1) {
-        return;
-    }
-    core.info(`Cache saved with the key: ${primaryKey}`);
+    info(`Cache saved with the key: ${primaryKey}`);
 }
 
 ;// CONCATENATED MODULE: ./lib/setup.js
@@ -338,22 +330,22 @@ async function setup(version, nightly, cacheDependencyPath) {
     const neko = NekoAsset.resolveFromHaxeVersion(version); // Haxelib requires Neko
     console.log(`[neko] dl start = ${neko.version} (${neko.downloadUrl})`);
     const nekoPath = await neko.setup();
-    lib_core.addPath(nekoPath);
+    (0,core.addPath)(nekoPath);
     console.log(`[neko] NEKOPATH = ${nekoPath}`);
-    lib_core.exportVariable('NEKOPATH', nekoPath);
-    lib_core.exportVariable('LD_LIBRARY_PATH', `${nekoPath}:$LD_LIBRARY_PATH`);
+    (0,core.exportVariable)('NEKOPATH', nekoPath);
+    (0,core.exportVariable)('LD_LIBRARY_PATH', `${nekoPath}:$LD_LIBRARY_PATH`);
     const haxe = new HaxeAsset(version, nightly);
     console.log(`[haxe] dl start = ${version} (${haxe.downloadUrl})`);
     const haxePath = await haxe.setup();
-    lib_core.addPath(haxePath);
+    (0,core.addPath)(haxePath);
     console.log(`[haxe] HAXE_STD_PATH = ${haxePath}/std`);
-    lib_core.exportVariable('HAXEPATH', haxePath);
-    lib_core.exportVariable('HAXE_STD_PATH', external_node_path_namespaceObject.join(haxePath, 'std'));
+    (0,core.exportVariable)('HAXEPATH', haxePath);
+    (0,core.exportVariable)('HAXE_STD_PATH', (0,external_node_path_namespaceObject.join)(haxePath, 'std'));
     if (env.platform === 'osx') {
         /* Upstream; this doesn't work because of macOS SIP */
-        // core.exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
+        // exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
         console.log('[neko] fixing dylib paths');
-        const haxelibBin = external_node_path_namespaceObject.join(haxePath, 'haxelib');
+        const haxelibBin = (0,external_node_path_namespaceObject.join)(haxePath, 'haxelib');
         const otoolOut = await (0,exec.getExecOutput)('otool', ['-l', haxelibBin]);
         if (otoolOut.stdout.includes(nekoPath))
             console.log('[neko] rpath already patched');
@@ -371,7 +363,7 @@ async function setup(version, nightly, cacheDependencyPath) {
         }
     }
     console.log(`[haxelib] setup start = ${haxePath}/lib`);
-    const haxelibPath = external_node_path_namespaceObject.join(haxePath, 'lib');
+    const haxelibPath = (0,external_node_path_namespaceObject.join)(haxePath, 'lib');
     await (0,exec.exec)('haxelib', ['setup', haxelibPath]);
     if (cacheDependencyPath.length > 0) {
         console.log(`[haxelib] dep cache = ${cacheDependencyPath}`);

@@ -59007,18 +59007,18 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _haxelib__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6191);
+/* harmony import */ var _haxelib__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5468);
 
 
 async function run() {
     try {
-        const cacheDependencyPath = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('cache-dependency-path');
+        const cacheDependencyPath = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('cache-dependency-path');
         if (cacheDependencyPath.length > 0) {
             await (0,_haxelib__WEBPACK_IMPORTED_MODULE_1__/* .saveHaxelib */ .X)();
         }
     }
     catch (error) { // eslint-disable-line @typescript-eslint/no-implicit-any-catch
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(error.message);
     }
 }
 await run();
@@ -59028,7 +59028,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 6191:
+/***/ 5468:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
@@ -59040,14 +59040,14 @@ __nccwpck_require__.d(__webpack_exports__, {
 
 // UNUSED EXPORTS: createHaxelibKey, restoreHaxelib
 
-;// CONCATENATED MODULE: external "node:fs"
-const external_node_fs_namespaceObject = require("node:fs");
+;// CONCATENATED MODULE: external "node:fs/promises"
+const promises_namespaceObject = require("node:fs/promises");
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var lib_core = __nccwpck_require__(2186);
+var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/cache/lib/cache.js
-var lib_cache = __nccwpck_require__(7799);
+var cache = __nccwpck_require__(7799);
 // EXTERNAL MODULE: ./node_modules/@actions/glob/lib/glob.js
-var lib_glob = __nccwpck_require__(8090);
+var glob = __nccwpck_require__(8090);
 ;// CONCATENATED MODULE: ./src/haxelib.ts
 
 
@@ -59060,40 +59060,37 @@ var State;
     State["CacheHaxelibPath"] = "HAXELIB_PATH";
 })(State || (State = {}));
 async function createHaxelibKey(platform, version, cacheDependencyPath) {
-    const fileHash = await glob.hashFiles(cacheDependencyPath);
-    if (!fileHash) {
+    const fileHash = await hashFiles(cacheDependencyPath);
+    if (!fileHash)
         throw new Error('Some specified paths were not resolved, unable to cache dependencies.');
-    }
     return `haxelib-cache-${platform}-haxe${version}-${fileHash}`;
 }
 async function restoreHaxelib(primaryKey, haxelibPath) {
-    core.saveState(State.CachePrimaryKey, primaryKey);
-    core.saveState(State.CacheHaxelibPath, haxelibPath);
-    const restoreResult = await cache.restoreCache([haxelibPath], primaryKey);
-    core.setOutput('cache-hit', Boolean(restoreResult));
-    if (!restoreResult) {
-        core.info('haxelib cache is not found');
-        return;
-    }
-    core.saveState(State.CacheRestoreResult, restoreResult);
-    core.info(`Cache restored from key: ${restoreResult}`);
+    saveState(State.CachePrimaryKey, primaryKey);
+    saveState(State.CacheHaxelibPath, haxelibPath);
+    const restoreResult = await restoreCache([haxelibPath], primaryKey);
+    setOutput('cache-hit', Boolean(restoreResult));
+    if (!restoreResult)
+        return info('haxelib cache is not found');
+    saveState(State.CacheRestoreResult, restoreResult);
+    info(`Cache restored from key: ${restoreResult}`);
 }
 async function saveHaxelib() {
-    const restoreResult = lib_core.getState(State.CacheRestoreResult);
-    const primaryKey = lib_core.getState(State.CachePrimaryKey);
-    const haxelibPath = lib_core.getState(State.CacheHaxelibPath);
-    if (!external_node_fs_namespaceObject.existsSync(haxelibPath)) {
+    const restoreResult = (0,core.getState)(State.CacheRestoreResult);
+    const primaryKey = (0,core.getState)(State.CachePrimaryKey);
+    const haxelibPath = (0,core.getState)(State.CacheHaxelibPath);
+    try {
+        await (0,promises_namespaceObject.access)(haxelibPath, promises_namespaceObject.constants.F_OK);
+    }
+    catch {
         throw new Error(`Cache folder path is retrieved but doesn't exist on disk: ${haxelibPath}`);
     }
-    if (primaryKey === restoreResult) {
-        lib_core.info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
+    if (primaryKey === restoreResult)
+        return (0,core.info)(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
+    const cacheId = await (0,cache.saveCache)([haxelibPath], primaryKey);
+    if (cacheId === -1)
         return;
-    }
-    const cacheId = await lib_cache.saveCache([haxelibPath], primaryKey);
-    if (cacheId === -1) {
-        return;
-    }
-    lib_core.info(`Cache saved with the key: ${primaryKey}`);
+    (0,core.info)(`Cache saved with the key: ${primaryKey}`);
 }
 
 

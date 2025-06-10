@@ -3,8 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-import * as path from 'node:path';
-import * as core from '@actions/core';
+import { join } from 'node:path';
+import { addPath, exportVariable } from '@actions/core';
 import { exec, getExecOutput } from '@actions/exec';
 import { NekoAsset, HaxeAsset, Env } from './asset';
 import { restoreHaxelib, createHaxelibKey } from './haxelib';
@@ -16,25 +16,25 @@ export async function setup(version: string, nightly: boolean, cacheDependencyPa
   console.log(`[neko] dl start = ${neko.version} (${neko.downloadUrl})`);
   const nekoPath = await neko.setup();
 
-  core.addPath(nekoPath);
+  addPath(nekoPath);
   console.log(`[neko] NEKOPATH = ${nekoPath}`);
-  core.exportVariable('NEKOPATH', nekoPath);
-  core.exportVariable('LD_LIBRARY_PATH', `${nekoPath}:$LD_LIBRARY_PATH`);
+  exportVariable('NEKOPATH', nekoPath);
+  exportVariable('LD_LIBRARY_PATH', `${nekoPath}:$LD_LIBRARY_PATH`);
 
   const haxe = new HaxeAsset(version, nightly);
   console.log(`[haxe] dl start = ${version} (${haxe.downloadUrl})`);
   const haxePath = await haxe.setup();
-  core.addPath(haxePath);
+  addPath(haxePath);
   console.log(`[haxe] HAXE_STD_PATH = ${haxePath}/std`);
-  core.exportVariable('HAXEPATH', haxePath);
-  core.exportVariable('HAXE_STD_PATH', path.join(haxePath, 'std'));
+  exportVariable('HAXEPATH', haxePath);
+  exportVariable('HAXE_STD_PATH', join(haxePath, 'std'));
 
   if (env.platform === 'osx') {
     /* Upstream; this doesn't work because of macOS SIP */
-    // core.exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
+    // exportVariable('DYLD_FALLBACK_LIBRARY_PATH', `${nekoPath}:$DYLD_FALLBACK_LIBRARY_PATH`);
 
     console.log('[neko] fixing dylib paths');
-    const haxelibBin = path.join(haxePath, 'haxelib');
+    const haxelibBin = join(haxePath, 'haxelib');
     const otoolOut = await getExecOutput('otool', ['-l', haxelibBin]);
     if (otoolOut.stdout.includes(nekoPath)) console.log('[neko] rpath already patched');
     else {
@@ -52,7 +52,7 @@ export async function setup(version: string, nightly: boolean, cacheDependencyPa
   }
 
   console.log(`[haxelib] setup start = ${haxePath}/lib`);
-  const haxelibPath = path.join(haxePath, 'lib');
+  const haxelibPath = join(haxePath, 'lib');
   await exec('haxelib', ['setup', haxelibPath]);
 
   if (cacheDependencyPath.length > 0) {
