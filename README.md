@@ -1,8 +1,5 @@
 # setup-haxe
 
-[![Build Status](https://github.com/krdlab/setup-haxe/actions/workflows/test.yml/badge.svg "GitHub Actions")](https://github.com/krdlab/setup-haxe/actions/workflows/test.yml)
-[![License](https://img.shields.io/github/license/krdlab/setup-haxe.svg?label=license)](#license)
-
 This action sets up a Haxe environment for use in your workflows.
 
 ## Usage
@@ -16,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: krdlab/setup-haxe@v1
+      - uses: FunkinCrew/ci-haxe@v3
         with:
-          haxe-version: 4.3.4
+          haxe-version: 4.3.7
       - run: |
           haxe -version
           haxelib install hxnodejs
@@ -31,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: krdlab/setup-haxe@v1
+      - uses: FunkinCrew/ci-haxe@v3
         with:
           haxe-version: latest  # Install 'haxe_latest.tar.gz' from https://build.haxe.org/builds/haxe/linux64/
       - run: haxe -version
@@ -44,9 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: krdlab/setup-haxe@v1
+      - uses: FunkinCrew/ci-haxe@v3
         with:
-          haxe-version: 4.3.4
+          haxe-version: 4.3.7
           cache-dependency-path: 'lib.hxml'
       - run: |
           haxe -version
